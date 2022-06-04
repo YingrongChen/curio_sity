@@ -1,0 +1,94 @@
+---
+title: "Factors"
+author: "Yingrong Chen"
+date: "11/20/2021"
+output: html_document
+---
+
+## Introduction
+work with categorical variables, variables with a fixed and known set of possible values
+
+Example: recording month, string is not efficient enough
+
+forcats package in the core tidyverse
+```{r}
+library(tidyverse)
+```
+
+## creating a list of the valid levels:
+```{r}
+month_levels <- c(
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+```
+
+```{r}
+x1 <- c("Dec", "Apr", "Jan", "Mar")
+y1 <- factor(x1, levels = month_levels)
+```
+
+1. sort(y1) based on level
+2. any values not in the level will be silently converted to NA
+
+```{r}
+# Create a factor with levels taken from the data in alphabetical order
+factor(x1)
+# access the set of valid levels directly
+levels(x1)
+```
+
+##changing the levels' orders
+### fct_reorder()
+reordering the levels for factors whose levels are arbitrarily ordered
+x, a numeric vector that you want to use to reorder the levels.
+Optionally, fun, a function that’s used if there are multiple values of x for each value of f. The default value is median.
+
+### fct_relevel()
+any number of levels that you want to move to the front of the line
+
+### fct_reorder2()
+colouring the lines on a plot.
+reorders the factor by the y values associated with the largest x values
+
+### fct_infreq()
+order levels in increasing frequency
+
+### fct_rev()
+
+## changing the levels' values
+### fct_recode()
+To combine groups, you can assign multiple old levels to the same new level
+
+### fct_collapse()
+use e a vector of old levels to combine to new variable
+
+### fct_lump()
+lump together all the small groups
+1. default: progressively lump together the smallest groups, ensuring that the aggregate is still the smallest group
+2. use the n parameter to specify how many groups we want to keep
+
+## Example
+```{r}
+relig_summary <- gss_cat %>%
+  group_by(relig) %>%
+  summarise(
+    age = mean(age, na.rm = TRUE),
+    tvhours = mean(tvhours, na.rm = TRUE),
+    n = n()
+  )
+
+rincome_summary <- gss_cat %>%
+  group_by(rincome) %>%
+  summarise(
+    age = mean(age, na.rm = TRUE),
+    tvhours = mean(tvhours, na.rm = TRUE),
+    n = n()
+  )
+
+gss_cat %>%
+  mutate(marital = marital %>% fct_infreq() %>% fct_rev()) %>%
+  ggplot(aes(marital)) +
+    geom_bar()
+```
+

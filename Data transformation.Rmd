@@ -1,0 +1,147 @@
+---
+title: "Data transformation"
+author: "Yingrong Chen"
+date: "9/27/2021"
+output: html_document
+---
+dplyr package - part of the tidyverse
+## major functions/verbs
+filter(): a subset of rows
+select(): a subset of variables
+arrange(): Reorder the rows of a data frame
+mutate(): Create new variables based on existing ones
+summarise(): Compute summary statistics
+group_by(): Apply any of the above functions to a bunch of sub-groups of the data 
+
+Shared structure:
+1. first argument is a data frame or tibble to operate on
+2. subsequent arguments tell R what to do to the data frame using variable names (columns) with no quotation marks
+3. produce a new data frame
+
+## filter()
+choose a subset of rows based on one or more criteria
++ comparison opeators: ==(equal to), != (NOT equal to), >=, <=, >, <
++ Boolean logic: the operators & (for AND, can also use commas , between criteria ), | (“pipe”, for OR), ! (“bang”, for NOT)  
+```{r filter}
+#Choose flights headed to Albuquerque, NM
+# used an unnamed argument since all these verbs have data = as their first argument.
+abq_flights <- filter(flights, dest == "ABQ")
+#%in%: for a long list of values you want to check a variable against
+flights_filtered <- filter(flights, month %in% c(1:6))
+#looking for missing NA values, use is.na().
+flights_filtered <- filter(flights, is.na(dep_delay))
+
+```
+
+## select()
+choose a subset of columns or reorder some columns. select() always gives you the columns in the order you specify
+```{r select}
+#Select Multiple Adjacent Columns, - for what NOT to Select, names begin with/ conatin "sth."
+flights_selected <- select(flights, year:sched_dep_time, -(year:sched_dep_time), starts_with("sched"), contains("dep"), ends_with("dep")) 
+#Move 2 variables to be first two columns, then ask for everything() else
+flights_selected <- select(flights, carrier, tailnum, everything())
+```
+
+## arrange()
+re-arranges (or sorts) the rows based on the columns you specify, by default it sorts them in ascending order (lowest-to-highest).
+```{r}
+flights_arranged <- arrange(flights, sched_dep_time)
+flights_arranged <- arrange(flights, desc(sched_dep_time))
+#Sort on Multiple Columns
+flights_arranged <- arrange(flights, sched_dep_time, dep_time)
+```
+
+## mutate()
+create new columns 
+1. by doing arithmetic operations on existing variables/columns
+```{r}
+#Create new variable of log(GDP per capita)
+gapminder_mutate <- mutate(gapminder, log_gdpPercap = log10(gdpPercap))
+# Create a new variable for how far above or below the mean departure delay each flight is
+flights_mutate <- mutate(flights_small,
+                         relative_delay = dep_delay - mean(dep_delay, na.rm = TRUE))
+```
+
+2. lead() and lag()
+create a new variable that takes the value of a variable from the next (leading, using lead()) or previous (lagged, using lag()) observation
+Caution:
+1. Sort data frame properly
+2. The first observation in the data will get an NA for a lag(); same for the last observation 
+```{r}
+# Using lead() and lag() with mutate()
+gapminder_mutate <- mutate(gapminder,
+#Get population from the next row in the data frame
+pop_lead = lead(pop),
+#Get population from the previous row in the data frame
+pop_lagged = lag(pop))
+```
+
+3. Cumulative Functions
+(cumulative) sum, mean, product, minimum, or maximum
+```{r}
+flights_mutate <- mutate(flights_small,
+#Cumulative total departure delays across all flights in the data so far
+dep_delays_tot = cumsum(dep_delay),
+#Cumulative mean departure delay across all flights in the data so far
+dep_delays_cummean = cummean(dep_delay))
+```
+
+4. If-Else Functions with case_when() and Logical Comparisons
+```{r}
+flights_mutate <- mutate(flights_small,
+#Create new categorical variable for departure depending on values of dep_delay
+dep_cat = case_when(dep_delay < -5 ~ "Early", 
+dep_delay <= 5 ~ "On Time", # If the first check was FALSE, check if dep_delay meets the second condition
+TRUE ~ "Late")) # or any remaining observations just set their evaluation results to TRUE, and assign our remaining value "Late"
+```
+
+## group_by()
+grouped summarize(), grouped filter(), ungroup()
+```{r}
+#Most delayed flight each month
+flights_small %>% 
+  group_by(month) %>% 
+  #Find the max non-NA value of `dep_delay`, which will be applied to each month
+  filter(dep_delay == max(dep_delay, na.rm = TRUE))
+```
+
+
+## summarize()
+summary number (count, mean, sum, maximum, minimum) for the subgroups
+median(), quantile(), standard deviation  sd(), interquartile range IQR(), mean absolute deviation  mad(), the number of distinct variable values n_distinct()
+```{r}
+flights %>% 
+  group_by(origin) %>% 
+  summarize(mean_dep_delay = mean(dep_delay, na.rm = TRUE),
+#asked for the number of observations using n()
+  n_flights = n(),
+#And the number of flights with non-missing departure delays (only those actually included in our summary)
+  n_flights_in_summary = sum(!is.na(dep_delay)))
+```
+
+## count()
+count the number of observations by groups of one or more variables
+```{r}
+flights %>% 
+  count(origin, month, name = "n_flights")
+```
+
+## relational databases
+The information you want may be scattered across several data sets. 
+
+### Keys
+One or more shared variable(s) that link data sets to one another in pairs  
+2 types of keys:
+1. Primary keys: variables that uniquely identify a single observation in a table
+2. Foreign keys: variables that uniquely identify a single observation in  another table of interest. 
+
+### Relations
+A primary key in one data frame and a foreign key in another form a relation.
+3 types of relations :
+1. 1-to-1: there are single records that match the key in each data frame 
+2. 1-to-many: there are single records that match the key in one data frame, but many records that match it in another. For example, there’s only one record for each tailnum in planes, but many such records in flights. In other words, each plane only has one tailnum but takes many flights.
+3. Many-to-many: there are multiple records that match the key in each data frame. For example, every airline flies to multiple airports, and every airport has multiple airlines departing it.
+
+## Joining Relational Data: Mutating Joins
+
+#Tutorial 3.3

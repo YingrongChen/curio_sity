@@ -1,0 +1,153 @@
+---
+title: "Ggplot"
+author: "Yingrong Chen"
+date: "9/26/2021"
+output: html_document
+---
+---
+title: "ggplot"
+author: "Yingrong Chen"
+date: "9/26/2021"
+output: html_document
+---
+# Data Visualization 
+## ggplot2 
+“gg” stands for “Grammar of Graphics,” a unified framework consisting of 7 elements:
+
+```{r ggplot, warning=FALSE}
+ggplot() #lays down a default (Cartesian) coordinate system
+
+ggplot(data = <DATA>) + # 1. dataset, + at the end of each line to tell ggplot() more layers or other information is coming
+  
+  <GEOM_FUNCTION>( # 2. geomm - chart type, E.x. geom_histogram, geom_density, geom_jitter
+    
+     mapping = aes(<MAPPINGS>), # 3. Aesthetic mappings - X and Y, colors, sizes, fonts etc.
+     
+     stat = <STAT>, # 4. statistical transformation, or "stat" - often default
+     position = <POSITION> # 5. Positional adjustments - bar charts stacked or side-by-side?
+  ) +
+  <COORDINATE_FUNCTION> + # 6. Coordinate system - Cartesian, polar, or maps for spatial data
+  <FACET_FUNCTION> # 7. Facetting - split one plot into many sub-plots
+```
+
+### Geom - chart type
+#### Visualizing Single Variables
+Continuous Variables: 
+Histograms (geom_histogram), Density Plots (geom_density), 
+Frequency Polygons (geom_freqpoly), 
+Boxplots (geom_boxplot)
+Raincloud Plots: geom_density() + geom_jitter()
+
+Categorical Variables: Bar Charts
+
+#### Visualizing Two (or Three) Variables
+#####Two Continuous Variables
+Scatterplots: geom_point, geom_jitter, Line: geom_line()
+
+Linear regression: geom_smooth (method = , linetype =, se = TRUE #CI)
+1. method: 
+“lm” stands for linear model, specify by formula =
+"loess" stands for “Locally Estimated Scatterplot Smoothing”, more flexible curves that are more “responsive” to the data,
+"gam" stands for “Generalized Additive Model”, need to specify formula = s(x, bs = "cs")
+"glm" stands for “generalized linear model.”
+
+#####One Continuous and One Categorical Variable
+Frequency Polygons, Histograms, Density Plots, Boxplots, Raincloud Plots, Ridgeplots (Joyplots): geom_density_ridges(), 
+
+#####Two Categorical Variables
+Bar Charts
+Heat Maps
+```{r}
+ggplot(data = count(diamonds, cut, color), mapping = aes(x = color, y = cut)) +
+  geom_tile(mapping = aes(fill = n))
+```
+
+### Aesthetic Mappings (Aesthetics)
+1. The first argument: mapping, which tells the geom layer which aesthetics to associate with which values of the data.
+2. Inside mapping = aes()： map to a specific variable in your data，E.g. x to map to flipper_length_mm.
+grouping aesthetic - based on one variable:
+fill = the color of shapes 
+color = the color of points, lines, and outlines (based on one variable
+Shape
+Size
+Alpha (transparency): most useful for overlapping data
+
+
+3. Outside mapping = aes(): manually-defined aesthetics. 
+color = "darkgreen", shape = 15 (15 in 25 built-in shapes for points)
+
+4. Global vs. Local Aesthetics
+when we have two geoms (chart type layers), we can make aesthetics global rather than local to avoid typing them twice.
+```{r aesthetics}
+ggplot(data = penguins) +
+  geom_density(mapping = aes(x = flipper_length_mm)) +
+  geom_jitter(mapping = aes(x = flipper_length_mm, y = 0), height = 0.001, width = 0)
+```
+
+### Statistical Transformations (Stats)
+do something to the data before mapping to specific aesthetics
+1. stat = "identity", “do nothing” - map the data just as they are (identically), default of geom_point()
+2. stat = "count", count the number of observations at each leveland plot that, rather than any actual value from the dataset, works with categorical variables, for bar plot
+3. stat = "bin" to “bin” your data in different groups and then plot bin counts, for histograms and frequency polygons
+4. stat = "density" to compute the density values, for density plot
+5. stat = "smooth" to fit a smoothed curve to your data, geom_smooth()
+6. stat = "boxplot" to compute a 5-number summary (min, 1st quartile, median, 3rd quartile, max), boxplots
+
+### position
+1. position = "identity" #overlapping
+2. position = "stack" #stacking, the default for a bar chart
+3. position = "fill" #makes all the bars the same height - 1.0
+4. position = "dodge" #side-by-side bars for each color within each cut
+
+### Facetting
+break a single plot into sub-plots by groups, usually defined by a categorical variable.
+1. facet_wrap(~ class, nrow = 2) # The syntax looks a little funny but it just means facet by class, and arrange the resulting facets in 2 rows
+2. facet_grid(drv ~ cyl) #drv = front, rear or 4-wheel drive; cyl = number of cylinders in engine
+formula notation: create rows of plots from drv and columns from cyl.
+3. scales = "free" / scales = free_x / scales = free_y # The default is "fixed", meaning the scales are fixed (the same) across sub-plots
+
+###Coordinate Systems
+Cartesian (X-Y) coordinate, polar coordinate, map for spatial data
+coord_flip()
+
+###Customizing Your Plots
+1. labs(title = "", subtitle = "", x = "", y = "", caption = "")
+2. Legend 
+```{r}
+#Manually change our legend labels (make sure you have the right order!)
+  scale_color_discrete(labels=c("Adelie", "Chinstrap (the best!)", "Gentoo")) + #"_discrete" tells ggplot we're dealing with a categorical variable
+  scale_shape_discrete(labels=c("Adelie", "Chinstrap (the best!)", "Gentoo")) +
+  
+  theme(legend.position = "bottom", # Move legend to bottom
+        legend.title = element_blank()) # Delete legend title
+```
+3. Axis Limits
+ylim(min, max), xlim()
+
+4. Reordering Factors (categorical variable)
+aes(x = reorder(species, bill_length_mm, FUN = median, na.rm = TRUE)
+- reorder the factor species, based on median bill length, remove any NA values of bill length first
+
+5. Themes
+pre-made settings on background color, grid lines, and font sizes and types
+  theme_bw(), theme_economist(), theme_fivethirtyeight()
+  
+6. Color Palettes
+1. “rainbow palette”: default colors of ggplot2 
+2. viridis: scale_color_viridis_c(option = "viridis") for continuous (c) variable and scale_color_viridis_d() for categorical(d) variable
+3. RColorBrewer package: sequential data, qualitative data, diverging data
+  display.brewer.all()
+  scale_color_brewer(palette = "Dark2") for color
+  scale_fill_brewer() for fill 
+  scale_color_distiller(), for continuous variables 
+
+7. Dealing With Overplotting
+1. Jittering (geom_jitter(height=,  width) = ) automatically adding random noise to separate points plotted over one another
+2. Alpha: doesn't move every point slightly or obscure their exact value in a bin
+3. Hexbin Plots: hexbin package, bin scatterplot values into slightly-larger hexagons
+
+### Storing and Exporting ggplot objects
+1. assign the plot to an object, then come back to manipulate it later
+2. exporting a plot: ggsave()
+
+ggsave(filename = "C:/Users/elzat/Dropbox/QTM_150/Tutorials/0 - Basics/penguin_plot2.png", plot = penguin_plot2, width, heigh
