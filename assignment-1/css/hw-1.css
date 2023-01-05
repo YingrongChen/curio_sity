@@ -1,0 +1,38 @@
+header{
+	background: #def5f4;
+	text-align: center;
+    text-transform: uppercase;
+}
+
+body{
+	background:#def5f4;
+	font-size: 125%;
+    text-align: left;
+}
+
+h1{
+	color: #82b9f3;
+    text-transform: uppercase;
+}
+
+h2{
+	color: #82f3ab;
+    text-transform: uppercase;
+}
+
+img{
+    display: none;
+}
+
+section{
+  background: #696a73;
+}
+
+a{
+	color: #000000;
+	background-color: #a2a099;
+}
+
+aside{
+	display: none;
+}
