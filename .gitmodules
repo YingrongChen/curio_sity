@@ -1,0 +1,3 @@
+[submodule "cuda/cuda-course"]
+	path = cuda/cuda-course
+	url = https://github.com/Infatoshi/cuda-course
