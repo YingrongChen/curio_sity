@@ -1,0 +1,94 @@
+/* 
+Together-1
+ */
+body{
+	background:linear-gradient(#666666 0%, #00b7ea 100%); 
+	font-size: 125%;
+	margin: 5%;
+	background-image: url('../assignment-1/images/flywheel.jpg')
+}
+
+header{
+	margin: auto 0; 
+	padding: 1%;
+	background: linear-gradient(#666666 0%, #00b7ea 100%); 
+}
+
+h1{
+	margin: auto 0; 
+	color: #f38282;
+}
+
+nav{
+	font-variant: small-caps;
+	font-family: cursive, "Times New Roman", serif;
+	font-size: 150%;
+}
+
+h2{
+	color: #666666;
+	background: #f6fbc8;
+}
+
+
+summary{
+	font-style:normal;
+}
+
+details{
+	font-style: italic;
+}
+
+
+footer{
+	background: #faf9f9;
+	clear: both;
+}
+
+span{
+	display: inline-block;
+	height: 50px;
+}
+
+.whole{
+	display: inline-block;
+	margin: 5%;
+	float: left;
+}
+
+img{
+	width: 10%;
+	display: inline;
+}
+
+a{
+	display: block;
+	width: auto;
+	text-align: center;
+	background-color: #f38282;
+}
+ol{
+	list-style-type: upper-roman;
+}
+
+.half{
+	width:25%;
+	margin-right: 2%;
+	display:inline-block;
+	float:left;
+}
+
+p{
+	color: red;
+	padding:10px 5px;
+	background: black;
+  }
+  .fancy{
+	font-family: cursive;
+	background: red;
+	color: green;
+  }
+  .plain{
+	font-family: Times, serif;
+	color: black;
+  }  
