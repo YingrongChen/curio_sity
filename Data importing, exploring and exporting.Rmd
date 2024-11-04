@@ -1,0 +1,83 @@
+---
+title: "Data importing, exploring and exporting"
+author: "Yingrong Chen"
+date: "9/26/2021"
+output: html_document
+---
+##Working Directories
+default place where R and RStudio will look for or try to write files to
+```{r wd}
+#Find out what your working directory is
+getwd()
+#Set the working directory to be the location of the script or R Markdown
+setwd()
+# or going to the top menu and clicking  Session > Set Working Directory... > To Source File Location.
+```
+
+```{r}
+# Specify the actual location of the file. Save the CSV file to your working directory or a sub-directory thereof.
+  diabobes <- read_csv("[FILE PATH TO DOWNLOADS FOLDER]/obesity-diabetes.csv")
+# go to your working directory - indicated by the . - then the folder datasets, then search there for obesity-diabetes.csv
+  diabobes <- read_csv("./datasets/obesity-diabetes.csv")
+#move up one level by starting the file path with ..
+  diabobes <- read_csv("../obesity-diabetes.csv")
+
+```
+
+## Importing
+Several ways you can get data:
+1. Data that’s native to R (for example, cars) 
+2. Data that come from packages: load the package and then call the data frame
+```{r import fromm packages}
+library(palmerpenguins)
+data(penguins) # function to open datasets part of a package
+```
+3. “flat” data file from local computer or a shared cloud folder (comma-separated value files .csv or Excel files .xls or .xlsx)
+
+```{r data importing}
+readr::read_csv()
+readxl::read_excel()
+diabobes <- read.csv("./obesity-diabetes.csv")
+#grab the data on any sheet with sheet = [SHEET NAME] argument
+diabobes_trend <- read.excel("./obesity-diabetes-excel.xlsx", sheet = "diabobes_trends")
+# for REALLY big file, to speed up importing
+data.table::fread()
+diabobes <- fread("./obesity-diabetes.csv")
+```
+
+4. Querying SQL or other “relational” databases straight from R or Querying data from an application programming interface (API), commonly in hierarchical JSON or .xml formats
+
+###Removing Files You No Longer Need
+rm([name of the object, or objects separated by commas]) 
+
+## Exploring
+truncated/stored as a tibble.
+```{r data exploration}
+#Print the entire data frame
+penguins
+#open up a new window of table
+View(penguins)
+#Print the first or last few observations
+head(penguins, n = 8)
+tail(penguins, n = 4)
+#Look at the structure of the data frame
+str(penguins)
+#Get a summary of each variable of the data frame: 
+#For numeric variables (doubles and integers), 6-number summary (minimum, maximum, 1st and 3rd quartiles, median, and mean). For categorical variables (factors), the levels of the factor and the number of observations in each.
+summary(penguins)
+#skim() the data frame: better, more comprehensive
+skimr::skim(penguins)
+```
+
+## Exporting
+
+```{r}
+# the name of the object, the location to save it, the name of the exported file
+write_csv(diabobes, "./obesity-diabetes-exported.csv")
+# for REALLY big file, to speed up exporting
+data.table::fwrite()
+fwrite(diabobes, "./obesity-diabetes-exported.csv")
+```
+
+
+

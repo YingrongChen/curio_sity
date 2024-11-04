@@ -1,0 +1,251 @@
+---
+title: "Data Cleaning"
+author: "Yingrong Chen"
+date: "10/9/2021"
+output: html_document
+---
+```{r}
+library(tidyverse)
+```
+
+## Basics
+Data cleaning is what happens after you get data from a source and you go through to check for and possibly correct:
+
+1. Incorrect data: Weird values that might be errors
+2. Incomplete data: missing values
+3. Mis-formatted data: for example, something that is mostly numbers or dates but with a few character values you have to deal with before converting everything to the proper format
+“10/17/20”, “17/10/20”, “October 17 2020”,
+4. Duplicate data
+
+## janitor() package
+### get_dupes(): identifying duplicate observations
+```{r}
+biz %>%
+  get_dupes(product_line)
+```
+returned all potentially duplicate records based on the variable product_line, and the number of duplicates for each duplicated value.
+
+## Getting Oriented to New Data
+
+### Data Dictionaries/Codebooks
+1. A brief overall description of what the data frame contains to help orient you, under “Description”
+2. A list of each variable name and enough information to ensure people can understand what the data means. This can be units, or (where necessary) clarifications of numerical or other codings.
+e.g the help page for the penguins data frame
+
+### Check for implausible Values
+View(), str(), summary() or skimr()
+PLOT. YOUR. DATA.
+
+- Data entry error: correct it or throw that value out
+- Actually means “Missing”: re-code it to NA
+
+## Cleaning Variable Names
+Inconsistent variable names style: inconsistent capitalization, "_", "." and spaces in variable names.
+```{r janitor::clean_names()}
+stroke %>% 
+  clean_names() %>% 
+  head()
+```
+to create “contingency tables” (like 2x2 tables) for examining the associations between two or more categorical variables
+```{r tabyl()}
+stroke %>% 
+  tabyl(FEMALE, MARITAL)
+```
+
+## Recoding Variable Values
+### Integer Variables to Char variables
+```{r}
+stroke_recode <- stroke %>% 
+  mutate(MARITAL = factor(MARITAL, # Change marital from its current type (integer) into a factor
+                          levels = c(1, 2), # List the current values of the variable
+                          labels = c("Married", "Unmarried"))) # Assign labels to those, in order
+```
+
+## Char variables to Integer variable
+```{r}
+# Simple solution 
+widgets %>% 
+  mutate(widgets_made = as.numeric(widgets_made))
+
+widgets %>% 
+  mutate(widgets_made = str_replace_all(widgets_made, ",", "")) %>%  # Take the string widgets_made and replace every "," with ""
+  mutate(widgets_made = as.numeric(widgets_made))
+```
+
+### General Recode
+```{r}
+#Recode time in months rather than days
+stroke_recode <- stroke %>% 
+  mutate(time = recode(time, 
+                          "90" = 3L, # L to specify we want an integer to match type in our new column 
+                          "365" = 12L)) # Even though time is an integer, we have to put each old value in quotes
+
+#Recode state abbreviations to full names using an outside vector
+state_abbs <- c("IL" = "Illinois", "OH" = "Ohio", "IN" = "Indiana", "MI" = "Michigan", "WI" = "Wisconsin")
+midwest_recode <- midwest %>% 
+  mutate(state = recode(state, !!!state_abbs)) # If you're passing in a vector, precede it with !!!
+
+#Recode state abbreviations to full names using another data frame
+state.keys <- tibble(state = state.name, ab = state.abb) %>%  # state.name and state.abb are vectors built in to R
+  rename(state_name = state)
+
+midwest_recode <- midwest %>% 
+  select(county, state, poptotal) %>% # To create smaller data frame to easily see what happens
+  left_join(state.keys, by = c("state" = "ab")) %>% 
+  select(-state)
+```
+
+## Duplicated Observations
+Identifying Duplicates
+```{r get_dupes()}
+#Check for duplicates
+penguins_dupe %>% 
+  get_dupes()
+
+# Check for duplicates on a subset of columns
+penguins %>% 
+  get_dupes(species, island, sex, bill_length_mm, flipper_length_mm)
+```
+new variable dupe_count tells you how many times each referenced observation is duplicated.
+
+Dealing With Duplicates
+```{r distinct()}
+#Remove duplicates (find them, then delete all but the first in each duplicate set)
+penguins_dupe %>% 
+  distinct() # Notice we're only left with 344 rows, the correct number of unique penguins
+
+#Remove duplicates on a subset of columns
+penguins %>% 
+  distinct(species, island, sex, bill_length_mm, flipper_length_mm,
+           .keep_all = TRUE) # show all the columns
+```
+
+## Missing Data
+### Empty Rows and Columns
+```{r remove_empty()}
+# Remove empty rows and columns
+q_clean <- q %>%
+  remove_empty(c("rows", "cols"))
+# Remove just the empty rows 
+q_cleancol <- q %>%
+  remove_empty("cols")
+# Remove just the empty columns
+q_cleanrow <- q %>%
+  remove_empty("rows")
+```
+
+### Missing values/Explicitly missing data
+explicitly missing data: you’ll see an NA (or other value) that tells you it’s missing
+
+If there are substantial amount of missing values, there may be selection bias
+patterns in explicitly missing data, ask if there’s an obvious reason why those data are missing
+
+### Drop the data
+```{r drop_na()}
+# drops observations with any missing values for the specified variables (or for any variable 
+```
+### Filling in With Prior Values
+Sometimes to make data entry go faster, certain fields that are repeated will be left blank
+```{r fill()}
+treatment %>% 
+  fill(person) # Specify the variable name(s) you want to fill with prior values
+
+```
+
+### Filling in With Imputed Values
+1. A static value that makes sense.
+2. the mean value / most common category 
+impute(): 
+<DATA FRAME WITH MISSINGS> %>%
+    impute(<REPLACEMENT VALUE>,
+           <FIRST COLUMN WHERE MISSING VALUES WANT TO BE REPLACED>,
+           <SECOND COLUMN WHERE MISSING VALUES WANT TO BE REPLACED>,
+           ...
+           )
+```{r}
+# Impute 0 for missing FIM using our old friend case_when()
+stroke %>% 
+  mutate(fim = case_when(is.na(fim) ~ as.integer(0), # To indicate FIM should stay as integers, not switch to doubles
+                         TRUE ~ fim))
+
+# Impute 0 for missing FIM using replace_na()
+stroke %>% 
+  replace_na(list(fim = 0)) # Must enclose your recodings as a list()
+```
+
+```{r impute()}
+# Impute 0 for missing FIM using tidyimpute::impute()
+stroke %>%
+  impute(0, fim)
+
+# Impute mean for missing FIM 
+stroke %>%
+  impute_mean(fim)
+
+impute_median()
+
+# the mean of a variable from a particular subgroup
+# Calculate the mean fim by racial group in a separate data frame
+mean_fim_race <- stroke %>% 
+  group_by(RACE) %>% 
+  summarize(mean_fim = mean(fim, na.rm = TRUE)) 
+
+# Link this data back into the main data frame
+stroke %>% 
+  left_join(mean_fim_race, by = "RACE") %>% 
+  mutate(fim = case_when(is.na(fim) ~ mean_fim, 
+                         TRUE ~ as.double(fim))) %>%
+# Drop new column
+  select(-mean_fim)
+```
+
+### Entire missing observations/Implicit Missing Observations
+Some rows or columns are entirely missing. No NA or other value will tell you it’s not there - you have to do some other checks to detect their absence.
+
+complete() takes a sequence of variables, creates all possible combinations of them, and makes sure they all appear in your data frame. If one doesn’t, it creates that combination and fills in NAs for all the other variables
+```{r complete()}
+stocks %>% 
+  complete(year, qtr)
+```
+
+## String/Character 
+stringr() loaded with tidyverse
+string(many characters but one project) vs. character vector(vectors of string many project)
+
+### Find patterns in string
+```{r}
+my_vector <- c("Hello", "my name is", "Bond", "James Bond")
+str_detect(my_vector, "Bond") # returns a Boolean indicating if the pattern was found
+str_match(my_vector, "Bond") # returns a character matrix with N/A or the pattern
+str_extract(my_vector, "Bond") # returns a character vector with N/A or the pattern
+str_locate(my_vector, "Bond") # returns a data frame with 2 numeric variables of N/A or start and end position
+str_subset(my_vector, "Bond") # returns a character vector with elements from the original vector
+```
+
+### Replace/Remove patterns 
+```{r}
+str_remove(my_vector, "Bond")
+str_replace(my_vector, "Bond", replacement = "Franco")
+```
+
+### Edit string case
+```{r}
+str_to_lower()
+str_to_upper()
+```
+
+## factor
+The data objects to categorize the data and store it as levels. store both strings and integers. - useful in the columns which have a limited number of unique values. Like "Male, "Female" and True, False etc.
+```{r}
+readr::read_csv("colleges_clean.csv")
+```
+
+### Turn a character or numeric variable into factor
+```{r}
+x <- c("apple", "dog", "banana", "cat", "banana", "Queen Elizabeth", "dog")
+x <- factor(x) # levels: possible categories 
+x <- fct_recode(x, fruit = "apple", fruit = "banana", pet = "dog", pet = "cat")
+penguins %>%
+  mutate
+```
+

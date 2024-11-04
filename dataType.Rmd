@@ -1,0 +1,104 @@
+---
+title: "dataType"
+author: "Yingrong Chen"
+date: "11/21/2021"
+output: html_document
+---
+
+#Scalar
+
+#Vector
+##Key attributes
+
+1. A type, of which there are six major ones:
+
+*Logical
+*Character
+*Integer
+*Double (a way to store non-integer numbers)
+NA - meaning the element is empty. It has no value.
+NaN - meaning the element has a value, but R doesn’t recognize it as a number. NaN = Not a Number.
+Inf - meaning the value is infinity
+-Inf - meaning the value is negative infinity
+*Complex
+*Raw
+- Numeric vectors is an umbrella term for integer and double vectors. 
+- is.xx() helper functions to check the type of a vector
+- typeof(vec) finds the type
+
+
+2. A length, which is the number of elements it contains
+
+##Missing Values in Vectors
+NA refers to the absence of a value for one specific element of a vector
+NULL refers to the absence of a vector itself
+```{r}
+# A logical NA
+lgl_vec <- NA
+
+# An integer NA
+int_vec <- NA_integer_
+
+# A double NA
+dbl_vec <- NA_real_
+
+# A character NA
+char_vec <- NA_character_
+
+# A NULL vector
+vec_null <- NULL
+```
+
+##Subsetting Vectors
+```{r}
+# Get the first element twice, then all but the last element
+bday[c(1, 1, 5, 3)]
+
+# Get everything but the 2nd and 4th elements
+bday[c(-2, -4)]
+
+# Find locations of element "Birthday"
+which(bday == "Birthday") # Returns a numeric vector of locations of elements meeting the indicated criterion
+
+# Use this to extract all instances of "Birthday" from our vector
+bday[which(bday == "Birthday")]
+
+#Return all primes <= 5
+five_primes[five_primes <= 5]
+
+#Return all non-missing elements
+five_primes[!is.na(five_primes)]
+```
+
+#Lists
+1.Heterogeneous: an contain more than one type of data
+```{r}
+# A list
+bday_list <- list("Happy Birthday to You!", "How Old Are You?", 34L, TRUE)
+str(bday_list)
+```
+2.Recursive: elements of a list can be vectors themselves or even other lists
+
+##Subsetting Lists
+1.single brackets [i] extracts the i’th sub-element of a list and will always return a list of the sub-elements
+2.double brackets [[i]] extracts the i’th component of a list and will return whatever that actual things is - a list or a vector of the appropriate type
+
+#Augmented Vectors
+vectors with some additional attributes/additional metadata (that is, information) that’s attached to a vector or list that alters its behavior
+
+##attributes():
+1. Names
+2. Dimensions
+turn a vector into a matrix/array.specify a height of vectors via dimension attributes.
+3. Classes
+specify how objects like vectors and data frames interact with various functions in the S3 object oriented system.
+
+##Types
+1. Dates and Date-Times
+
+2. Data Frames and Tibbles
+3 new class attributes: tbl, tbl_df, and data.frame
+2 new name attributes:names for column (variable) names; row.names to identify observation numbers
+
+3. Factors
+Factors represent categorical data, but they’re actually integer vectors with a levels attribute. That attribute assigns a character name to each integer value.

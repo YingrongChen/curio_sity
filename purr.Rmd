@@ -1,0 +1,205 @@
+---
+title: "purr"
+author: "Yingrong Chen"
+date: "11/21/2021"
+output: html_document
+---
+#Ways to accomplish iteration in R:
+1. Copying and pasting
+2. For-loops
+3. The base R family of apply() functions (including lapply(), vapply(), sapply(), etc.). 
+4. `map_*()` functions from the `purrr` package, which is part of the tidyverse
+5. Other built-in tidyverse functions such as `rowwise()`, `across()`, `c_across()`
+
+#Data type review
+A vector: storing many individual elements (a single number or a single character or string) of the same type in a single object
+
+A data frame: storing many vectors of the same length but possibly of different types in a single object
+
+A list: storing many objects of any type (e.g. data frames, plots, vectors) together in a single object
+
+#Map functions
+A map function is one that applies the same action/function to every element of an object (e.g. each entry of a list or a vector, or each of the columns of a data frame).
+- the second argument, .f, the function to apply, can be a formula, a character vector, or an integer vector.
+
+##Output: different types 
+map(.x, .f) is the main mapping function and returns a list
+
+map_df(.x, .f) returns a data frame
+
+map_dbl(.x, .f) returns a numeric (double) vector
+
+map_chr(.x, .f) returns a character vector
+
+map_lgl(.x, .f) returns a logical vector
+
+##Input
+vector (of any type): iteration is done over the entries of the vector
+
+list: iteration is performed over the elements of the list
+
+data frame: iteration is performed over the columns of the data frame.
+
+##Working with vector
+###Iterate through the vector c(1, 4, 7) by adding 10 to each entry
+```{r}
+pacman::p_load(knitr, purrr, tidyverse)
+#Defining the function
+addTen <- function(.x) { 
+  return(.x + 10)
+}
+#Iterating
+map(.x = c(1, 4, 7), 
+    .f = addTen)
+map(c(1, 4, 7), addTen)
+#Returning a data frame
+map_df(c(1, 4, 7), function(.x) {
+  return(data.frame(old_number = .x, # consistent column names
+                    new_number = addTen(.x)))
+})
+```
+
+###Tilde-dot shorthand for functions
+```{r}
+#Replacing
+function(x) {
+  x + 10
+}
+#with
+~{.x + 10}
+```
+“anonymous” function/a temporary function (that you define as the function argument to the map)
+~ : started an anonymous function
+.x (or simply .): the argument of the anonymous function
+
+###modify() 
+just like the map functions, but always returns an object the same type as the input object
+modify_if(), only applies the function to elements that satisfy a specific criteria (specified by a “predicate function”, the second argument called .p)
+```{r}
+modify_if(.x = list(1, 4, 7), 
+          .p = function(x) x > 5,
+          .f = addTen)
+```
+
+##Working with data frame
+```{r}
+# to download the data directly:
+gapminder_orig <- read.csv("https://raw.githubusercontent.com/swcarpentry/r-novice-gapminder/gh-pages/_episodes_rmd/data/gapminder-FiveYearData.csv")
+# define a copy of the original dataset that we will clean and play with 
+gapminder <- gapminder_orig
+
+# apply the class() function to each column into a character vector
+gapminder %>% map_chr(class)
+
+# apply the n_distinct() function to each column into a numeric vector
+gapminder %>% map_dbl(n_distinct)
+
+#anonymous function that contains class() and n_distinct(), and then combines them into a two-column data frame
+gapminder %>% map_df(~(data.frame(n_distinct = n_distinct(.x),
+                                  class = class(.x))),
+                     .id = "variable") #include variable names as a column named "variable"
+```
+
+###map2(): multiple input objects
+map2(.x = object1, # the first object to iterate over
+     .y = object2, # the second object to iterate over
+     .f = plotFunction(.x, .y))
+nth iteration will correspond to the nth element in the object1 and the nth element in the object2
+
+e.g. if you have a continent vector .x = c("Americas", "Asia") and a year vector .y = c(1952, 2007), the iteration will be first the Americas for 1952, and then Asia for 2007
+
+###pmap() 
+iterate over an arbitrary number of objects (i.e. more than two).
+
+###invoke_map()
+The first argument is a list of functions or character vector of function names. The second argument is a list of lists giving the arguments that vary for each function. The subsequent arguments are passed on to every function.
+
+```{r}
+f <- c("runif", "rnorm", "rpois")
+param <- list(
+  list(min = -1, max = 1), 
+  list(sd = 5), 
+  list(lambda = 10)
+)
+
+invoke_map(f, param, n = 5) %>% str()
+```
+
+
+##Tibbles
+tibble columns can be lists (as opposed to vectors
+a tibble can be “nested” where the tibble is essentially split into separate data frames based on a grouping variable, and these separate data frames are stored as entries of a list
+```{r}
+gapminder_nested <- gapminder %>% 
+  group_by(continent) %>% 
+  nest()
+gapminder_nested
+gapminder_nested$data[[1]] #the first entry in the data column corresponds to the entire gapminder dataset for Asia
+
+```
+
+To apply vectorized functions like `mutate` to a list-column, you need to wrap the function you want to apply in a map function.
+```{r}
+#calculate the average life expectancy within each continent and add it as a new column
+gapminder_nested %>% 
+  mutate(avg_lifeExp = map_dbl(data, ~{mean(.x$lifeExp)}))
+
+#fit a model separately for each continent
+gapminder_nested <- gapminder_nested %>% 
+  mutate(lm_obj = map(data, ~lm(lifeExp ~ pop + gdpPercap + year, data = .x)))
+gapminder_nested
+```
+
+###keep()
+keeps elements of a list that satisfy a given condition, much like select_if() selects columns of a data frame 
+discard() does the opposite of keep(): discards any elements that satisfy your logical condition.
+```{r}
+#keeps the gapminder continent data frames that have an average (among the sample of 5 rows) life expectancy of at least 70
+gapminder_list %>%
+  keep(~{mean(.x$lifeExp) > 70})
+```
+###reduce()
+combines (reduces) all of the elements of a list into a single object by iteratively applying a binary function (a function that takes two inputs)
+accumulate() returns the intermediate values.
+
+```{r}
+reduce(c(1, 2, 3), sum)
+accumulate(c(1, 2, 3), sum)
+```
+
+###every(), some(), has_element()
+```{r}
+#whether every continent has average life expectancy greater than 70
+gapminder_list %>% every(~{mean(.x$life) > 70})
+#whether some continents have average life expectancy greater than 70
+gapminder_list %>% some(~{mean(.x$life) > 70})
+
+list(1, c(2, 5, 1), "a") %>% has_element("a")
+```
+
+#Reading in many files at once 
+```{r}
+library(palmerpenguins)
+#splitting the penguins dataset into three csv files, one for each species, named as [NAME OF SPECIES].csv, and save them in the data/ folder.
+penguins %>%
+  group_by(species) %>%
+  group_walk(~ write_csv(.x, paste0("data/", .y$species, ".csv")))
+
+#purrr solution
+map_dfr(files, read_csv, .id = "species")
+
+#vroom()
+library(vroom)
+
+vroom(files, id = "species")
+```
+
+#Dealing with failure
+safely(): it takes a function (a verb) and returns a modified version:
+
+result: the original result. If there was an error, this will be NULL.
+
+error: an error object. If the operation was successful, this will be NULL.
+
+possibly(), simpler than safely(), with a default value to return when there is an error
+quietly(), instead of capturing errors, it captures printed output, messages, and warnings
